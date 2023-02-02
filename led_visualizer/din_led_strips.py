@@ -39,20 +39,22 @@ noise_reduction = 40
 config = conpat % (BARS_NUMBER, RAW_TARGET, OUTPUT_BIT_FORMAT)
 bytetype, bytesize, bytenorm = ("H", 2, 65535) if OUTPUT_BIT_FORMAT == "16bit" else ("B", 1, 255)
 
-def calc_pixel(sample_bass):
-    sample_pixel = ((59/255))*sample_bass
-    sample_pixel = int(sample_pixel)
+def calc_pixel(calc_in):
+    calc_out = ((59/255))*calc_in
+    calc_out = int(calc_out)
+    return calc_out
 
 def run_bass():
     # BASS
     # 60 pixels / 3 = 20 pixels per color
-    # out 255 / 3 = 85
+    # sample 255 / 3 = 85
     # sample_bass = int(sample[0]+sample[1]/2)
     sample_bass = int(sample[0])
     low_range = 100
     mid_range = 200
     if sample_bass < low_range:
-        calc_pixel(sample_bass)
+        sample_pixel = calc_pixel(sample_bass)
+        max_pixel_bass = 59
         while max_pixel_bass > sample_pixel:
             pixels[max_pixel_bass] = (0, 0, 0)
             max_pixel_bass -= 1
@@ -62,23 +64,23 @@ def run_bass():
             max_pixel_bass += 1
   
     elif sample_bass >= low_range and sample_bass < mid_range:
+        sample_pixel = calc_pixel(sample_bass)
         max_pixel_bass = 59
-        calc_pixel(sample_bass)
         while max_pixel_bass > sample_pixel:
             pixels[max_pixel_bass] = (0, 0, 0)
             max_pixel_bass -= 1
-        max_pixel_bass = 20
+        max_pixel_bass = calc_pixel(low_range)
         while max_pixel_bass <= sample_pixel:
             pixels[max_pixel_bass] = (int(sample_bass/2), sample_bass, 0)
             max_pixel_bass += 1
               
     elif sample_bass >= mid_range and sample_bass < 255:
+        sample_pixel = calc_pixel(sample_bass)
         max_pixel_bass = 59
-        calc_pixel(sample_bass)
         while max_pixel_bass > sample_pixel:
             pixels[max_pixel_bass] = (0, 0, 0)
             max_pixel_bass -= 1
-        max_pixel_bass = 40
+        max_pixel_bass = calc_pixel(mid_range)
         while max_pixel_bass <= sample_pixel:
             pixels[max_pixel_bass] = (0, sample_bass, 0)
             max_pixel_bass += 1
@@ -104,8 +106,8 @@ def run():
             if len(data) < chunk:
                 break
             sample = struct.unpack(fmt, data)
-            run_bass
-                    
+            run_bass()
+            print(pixels[max_pixel_bass])
             pixels.show()
   
 if __name__ == "__main__":
