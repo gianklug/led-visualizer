@@ -44,6 +44,17 @@ def calc_pixel(calc_in):
     calc_out = int(calc_out)
     return calc_out
 
+def low_pixel(sample_bass, max_pixel, pixels):
+    sample_pixel = calc_pixel(sample_bass)
+    while max_pixel > sample_pixel:
+        pixels[max_pixel] = (0, 0, 0)
+        max_pixel -= 1
+    max_pixel = 0
+    while max_pixel <= sample_pixel:
+        pixels[max_pixel] = (sample_bass, 0, 0)
+        max_pixel += 1
+
+
 def run_bass(sample):
     # BASS
     # 60 pixels / 3 = 20 pixels per color
@@ -53,15 +64,16 @@ def run_bass(sample):
     low_range = 100
     mid_range = 200
     if sample_bass < low_range:
-        sample_pixel = calc_pixel(sample_bass)
-        max_pixel_bass = 59
-        while max_pixel_bass > sample_pixel:
-            pixels[max_pixel_bass] = (0, 0, 0)
-            max_pixel_bass -= 1
-        max_pixel_bass = 0
-        while max_pixel_bass <= sample_pixel:
-            pixels[max_pixel_bass] = (sample_bass, 0, 0)
-            max_pixel_bass += 1
+        low_pixel(sample_bass, 59, pixels)
+#        sample_pixel = calc_pixel(sample_bass)
+#        max_pixel_bass = 59
+#        while max_pixel_bass > sample_pixel:
+#            pixels[max_pixel_bass] = (0, 0, 0)
+#            max_pixel_bass -= 1
+#        max_pixel_bass = 0
+#        while max_pixel_bass <= sample_pixel:
+#            pixels[max_pixel_bass] = (sample_bass, 0, 0)
+#            max_pixel_bass += 1
   
     elif sample_bass >= low_range and sample_bass < mid_range:
         sample_pixel = calc_pixel(sample_bass)
