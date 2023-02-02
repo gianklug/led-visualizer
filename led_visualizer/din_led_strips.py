@@ -44,7 +44,7 @@ def calc_pixel(calc_in):
     calc_out = int(calc_out)
     return calc_out
 
-def run_bass():
+def run_bass(sample):
     # BASS
     # 60 pixels / 3 = 20 pixels per color
     # sample 255 / 3 = 85
@@ -106,7 +106,7 @@ def run():
             if len(data) < chunk:
                 break
             sample = struct.unpack(fmt, data)
-            run_bass()
+            run_bass(sample)
             print(pixels[max_pixel_bass])
             pixels.show()
   
