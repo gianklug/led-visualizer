@@ -44,16 +44,15 @@ def calc_pixel(calc_in):
     calc_out = int(calc_out)
     return calc_out
 
-def low_pixel(sample_bass, max_pixel, pixels):
+def set_pixel(sample_bass, max_pixel, pixels, g, r, range_pixel):
     sample_pixel = calc_pixel(sample_bass)
     while max_pixel > sample_pixel:
         pixels[max_pixel] = (0, 0, 0)
         max_pixel -= 1
-    max_pixel = 0
+    max_pixel = calc_pixel(range_pixel)
     while max_pixel <= sample_pixel:
-        pixels[max_pixel] = (sample_bass, 0, 0)
+        pixels[max_pixel] = (g, r, 0)
         max_pixel += 1
-
 
 def run_bass(sample):
     # BASS
@@ -64,38 +63,13 @@ def run_bass(sample):
     low_range = 100
     mid_range = 200
     if sample_bass < low_range:
-        low_pixel(sample_bass, 59, pixels)
-#        sample_pixel = calc_pixel(sample_bass)
-#        max_pixel_bass = 59
-#        while max_pixel_bass > sample_pixel:
-#            pixels[max_pixel_bass] = (0, 0, 0)
-#            max_pixel_bass -= 1
-#        max_pixel_bass = 0
-#        while max_pixel_bass <= sample_pixel:
-#            pixels[max_pixel_bass] = (sample_bass, 0, 0)
-#            max_pixel_bass += 1
+        set_pixel(sample_bass, 59, pixels, sample_bass, 0, 0)
   
     elif sample_bass >= low_range and sample_bass < mid_range:
-        sample_pixel = calc_pixel(sample_bass)
-        max_pixel_bass = 59
-        while max_pixel_bass > sample_pixel:
-            pixels[max_pixel_bass] = (0, 0, 0)
-            max_pixel_bass -= 1
-        max_pixel_bass = calc_pixel(low_range)
-        while max_pixel_bass <= sample_pixel:
-            pixels[max_pixel_bass] = (int(sample_bass/2), sample_bass, 0)
-            max_pixel_bass += 1
+        set_pixel(sample_bass, 59, pixels, int(sample_bass/2), sample_bass, low_range)
               
     elif sample_bass >= mid_range and sample_bass < 255:
-        sample_pixel = calc_pixel(sample_bass)
-        max_pixel_bass = 59
-        while max_pixel_bass > sample_pixel:
-            pixels[max_pixel_bass] = (0, 0, 0)
-            max_pixel_bass -= 1
-        max_pixel_bass = calc_pixel(mid_range)
-        while max_pixel_bass <= sample_pixel:
-            pixels[max_pixel_bass] = (0, sample_bass, 0)
-            max_pixel_bass += 1
+        set_pixel(sample_bass, 59, pixels, 0, sample_bass, mid_range)
 
 def run():
     with tempfile.NamedTemporaryFile() as config_file:
