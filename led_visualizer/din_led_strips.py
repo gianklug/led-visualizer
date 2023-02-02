@@ -107,7 +107,6 @@ def run():
                 break
             sample = struct.unpack(fmt, data)
             run_bass(sample)
-            print(pixels[max_pixel_bass])
             pixels.show()
   
 if __name__ == "__main__":
