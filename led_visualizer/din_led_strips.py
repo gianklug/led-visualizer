@@ -11,7 +11,12 @@ import neopixel
 #from colorama import Fore, Style
 
 pixels = neopixel.NeoPixel(board.D18, 60, auto_write=False, pixel_order=neopixel.RGB, brightness=0.2)
-sample_pixel = 0
+
+SAMPLE_PIXEL = 0
+GREEN_RANGE = 150
+ORANGE_RANGE = 210
+
+MAX_RED_PIXEL = 59
 
 BARS_NUMBER = 4
 OUTPUT_BIT_FORMAT = "8bit"
@@ -44,32 +49,29 @@ def calc_pixel(calc_in):
     calc_out = int(calc_out)
     return calc_out
 
-def set_pixel(sample_bass, max_pixel, pixels, g, r, range_pixel):
-    sample_pixel = calc_pixel(sample_bass)
-    while max_pixel > sample_pixel:
-        pixels[max_pixel] = (0, 0, 0)
-        max_pixel -= 1
-    max_pixel = calc_pixel(range_pixel)
-    while max_pixel <= sample_pixel:
-        pixels[max_pixel] = (g, r, 0)
-        max_pixel += 1
+def set_pixel(s_sample, s_max_pixel, s_pixels, green, red, range_pixel):
+    s_calc_pixel = calc_pixel(s_sample)
+    while s_max_pixel > s_calc_pixel:
+        s_pixels[s_max_pixel] = (0, 0, 0)
+        s_max_pixel -= 1
+    s_max_pixel = calc_pixel(range_pixel)
+    while s_max_pixel <= s_calc_pixel:
+        s_pixels[s_max_pixel] = (green, red, 0)
+        s_max_pixel += 1
 
-def run_bass(sample):
+def define_pixel(d_sample, d_low, d_mid, d_max_pixel):
     # BASS
     # 60 pixels / 3 = 20 pixels per color
     # sample 255 / 3 = 85
     # sample_bass = int(sample[0]+sample[1]/2)
-    sample_bass = int(sample[0])
-    low_range = 100
-    mid_range = 200
-    if sample_bass < low_range:
-        set_pixel(sample_bass, 59, pixels, sample_bass, 0, 0)
+    if d_sample < d_low:
+        set_pixel(d_sample, d_max_pixel, pixels, d_sample, 0, 0)
   
-    elif sample_bass >= low_range and sample_bass < mid_range:
-        set_pixel(sample_bass, 59, pixels, int(sample_bass/2), sample_bass, low_range)
+    elif d_sample >= d_low and d_sample < d_mid:
+        set_pixel(d_sample, d_max_pixel, pixels, int(d_sample/2), d_sample, d_low)
               
-    elif sample_bass >= mid_range and sample_bass < 255:
-        set_pixel(sample_bass, 59, pixels, 0, sample_bass, mid_range)
+    elif d_sample >= d_mid and d_sample < 255:
+        set_pixel(d_sample, d_max_pixel, pixels, 0, d_sample, d_mid)
 
 def run():
     with tempfile.NamedTemporaryFile() as config_file:
@@ -92,7 +94,7 @@ def run():
             if len(data) < chunk:
                 break
             sample = struct.unpack(fmt, data)
-            run_bass(sample)
+            define_pixel(int(sample[0]), GREEN_RANGE, ORANGE_RANGE, MAX_RED_PIXEL)
             pixels.show()
   
 if __name__ == "__main__":
