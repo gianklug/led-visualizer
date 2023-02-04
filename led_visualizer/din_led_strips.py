@@ -12,11 +12,11 @@ import neopixel
 
 ### Configuration ###
 
-GREEN_RANGE = 150
-ORANGE_RANGE = 210
+MAX_GREEN = 150
+MAX_ORANGE = 210
 
-NUMBER_OF_PIXELS_PER_BAR = 60
-NUMBER_OF_BARS = 1
+NUMBER_OF_PIXELS_PER_BAR = 61
+NUMBER_OF_BARS = 3
 
 ### DO NOT EDIT ###
 
@@ -38,78 +38,72 @@ channels = mono
 [smoothing]
 noise_reduction = 40
 [eq]
-1 = 1
-2 = 1.1
-3 = 0.9
-4 = 0.9
+1 = 1.1
+2 = 1
+3 = 1
 """
 
 MAX_PIXEL = (NUMBER_OF_PIXELS_PER_BAR*NUMBER_OF_BARS)
 
-pixels = neopixel.NeoPixel(board.D18, MAX_PIXEL, auto_write=False, pixel_order=neopixel.RGB, brightness=1)
+pixels = neopixel.NeoPixel(board.D18, MAX_PIXEL, auto_write=False, pixel_order=neopixel.RGB, brightness=0.1)
 
 config = conpat % (NUMBER_OF_BARS, RAW_TARGET, OUTPUT_BIT_FORMAT)
 bytetype, bytesize, bytenorm = ("H", 2, 65535) if OUTPUT_BIT_FORMAT == "16bit" else ("B", 1, 255)
 
-def calc_pixel(calc_in):
-    # BAR-1:  65, r = 15
-    # BAR-2: 178, r = 41
-    # BAR-3:  10, r =  2
-    calc_out = (((NUMBER_OF_PIXELS_PER_BAR-1)/255))*calc_in
+def calc(calc_in):
+    calc_out = (((NUMBER_OF_PIXELS_PER_BAR-1)/255)*calc_in)
     calc_out = int(calc_out)
     return calc_out
 
-def set_pixel(s_sample, s_max_pixel, s_pixels,    green, red, range_pixel, s_count_bar):
-    # BAR-1:        65,          59,  command,       67,   0,           0,  1
-    # BAR-2:       178,         119,  command, 178/2=89, 178,         150,  2
-    # BAR-3:        10,         179,  command,        0,  10,         210,  3
+def pixel_define(pd_sample, pd_count_bar, pd_low, pd_max):
+    pd_set_pixel = calc(pd_low) # 35
+    pd_set_pixel = pd_set_pixel+((pd_count_bar-1)*NUMBER_OF_PIXELS_PER_BAR) # 35 / 95 / 155
+    pd_calc_sample = calc(pd_sample) # 58
+    pd_calc_sample = (pd_calc_sample+((pd_count_bar-1)*NUMBER_OF_PIXELS_PER_BAR)) # 58 / 118 / 178
+    pd_end_pixel = calc(pd_max-1) # 49
+    pd_end_pixel = pd_end_pixel+((pd_count_bar-1)*NUMBER_OF_PIXELS_PER_BAR) # 49 / 109 / 169
+    return pd_set_pixel, pd_calc_sample, pd_end_pixel
 
-    s_calc_pixel = calc_pixel(s_sample)
-    # BAR-1: 15
-    # BAR-2: 41
-    # BAR-3:  2
+def set_dark(sd_sample, sd_count_bar, sd_pixels):
+    sd_calc_sample = calc(sd_sample)
+    sd_calc_sample = (sd_calc_sample+((sd_count_bar-1)*NUMBER_OF_PIXELS_PER_BAR))
+    sd_max_pixel = ((sd_count_bar*NUMBER_OF_PIXELS_PER_BAR)-1)
+    while sd_max_pixel > sd_calc_sample:
+        sd_pixels[sd_max_pixel] = (0, 0, 0)
+        sd_max_pixel -= 1
 
-    s_calc_pixel = (s_calc_pixel+((s_count_bar-1)*NUMBER_OF_PIXELS_PER_BAR))
-    # BAR-1: 15+((1-1)*60) =  15
-    # BAR-2: 41+((2-1)*60) = 101
-    # BAR-3:  2+((3-1)*60) = 122
+def set_green(g_sample, g_pixels, g_count_bar):
+    g_set_pixel, g_calc_sample, g_end_pixel = pixel_define(g_sample, g_count_bar, 0, MAX_GREEN)
+    while g_set_pixel <= g_calc_sample and g_set_pixel <= g_end_pixel:
+        g_pixels[g_set_pixel] = (g_sample, 0, 0)
+        g_set_pixel += 1
 
-    while s_max_pixel > s_calc_pixel:
-    # BAR-1:       59 > 15
-    # BAR-2:      119 > 101
-    # BAR-3:      179 > 122
-        s_pixels[s_max_pixel] = (0, 0, 0)
-        s_max_pixel -= 1
+def set_orange(o_sample, o_pixels, o_count_bar):
+    o_set_pixel, o_calc_sample, o_end_pixel = pixel_define(o_sample, o_count_bar, MAX_GREEN, MAX_ORANGE)
+    while o_set_pixel <= o_calc_sample and o_set_pixel <= o_end_pixel:
+        o_pixels[o_set_pixel] = (int(o_sample/2), o_sample, 0)
+        o_set_pixel += 1
 
-    s_calc_pixel = calc_pixel(range_pixel)
-    # BAR-1: ((60-1)/255)*0   =  0  (green)
-    # BAR-2: ((60-1)/255)*150 = 35  (orange)
-    # BAR-3: ((60-1)/255)*210 = 49  (red)
+def set_red(r_sample, r_pixels, r_count_bar):
+    r_set_pixel, r_calc_sample, r_end_pixel = pixel_define(r_sample, r_count_bar, MAX_ORANGE, 255)
+    while r_set_pixel <= r_calc_sample and r_set_pixel <= r_end_pixel:
+        r_pixels[r_set_pixel] = (0, r_sample, 0)
+        r_set_pixel += 1
 
-    s_start_pixel = ((s_count_bar-1)*NUMBER_OF_PIXELS_PER_BAR)
-    while s_start_pixel <= s_calc_pixel:
-        print(str(s_start_pixel) + " <= " + str(s_calc_pixel))
-    # BAR-1:          0 <=  15
-    # BAR-2:         60 <= 101
-    # BAR-3:        120 <= 122
-        s_pixels[s_start_pixel] = (green, red, 0)
-        s_start_pixel += 1
-
-def define_pixel(d_sample, GREEN_RANGE, GREEN_ORANGE, d_max_pixel, d_count_bar):
-    # BAR-1:           67,         150,          210,          59, 1
-    # BAR-2:          178,         150,          210,         119, 2
-    # BAR-3:           10,         150,          210,         179, 3
-    if d_sample < GREEN_RANGE:
-#        print("GREEN  - bar: " + str(d_count_bar) + " input: " + str(d_sample))
-        set_pixel(d_sample, d_max_pixel, pixels, d_sample, 0, 0, d_count_bar)
+def band_split(d_sample, d_count_bar):
+    print(d_sample)
+    set_dark(d_sample, d_count_bar, pixels)
+    if d_sample < MAX_GREEN:
+        set_green(d_sample, pixels, d_count_bar)
   
-    elif d_sample >= GREEN_RANGE and d_sample < GREEN_ORANGE:
-#        print("ORANGE - bar: " + str(d_count_bar) + " input: " + str(d_sample))
-        set_pixel(d_sample, d_max_pixel, pixels, int(d_sample/2), d_sample, GREEN_RANGE, d_count_bar)
+    elif d_sample >= MAX_GREEN and d_sample < MAX_ORANGE:
+        set_green(d_sample, pixels, d_count_bar)
+        set_orange(d_sample, pixels, d_count_bar)
               
-    elif d_sample >= GREEN_ORANGE and d_sample < 255:
-#        print("RED    - bar: " + str(d_count_bar) + " input: " + str(d_sample))
-        set_pixel(d_sample, d_max_pixel, pixels, 0, d_sample, GREEN_ORANGE, d_count_bar)
+    elif d_sample >= MAX_ORANGE and d_sample < 255:
+        set_green(d_sample, pixels, d_count_bar)
+        set_orange(d_sample, pixels, d_count_bar)
+        set_red(d_sample, pixels, d_count_bar)
 
 def run():
     with tempfile.NamedTemporaryFile() as config_file:
@@ -135,12 +129,15 @@ def run():
             sample = struct.unpack(fmt, data)
 
             count_bar = 1
+            print("---------------")
             while count_bar <= NUMBER_OF_BARS:
-                max_pixel = ((NUMBER_OF_PIXELS_PER_BAR*count_bar)-1)
-                # BAR-1: (60*1)-1 =  59
-                # BAR-2: (60*2)-1 = 119
-                # BAR-3: (60*3)-1 = 179
-                define_pixel(int(sample[(count_bar-1)]), GREEN_RANGE, ORANGE_RANGE, max_pixel, count_bar)
+                if count_bar == 1:
+                    print("BASS: ", end = '')
+                elif count_bar == 2:
+                    print("MID:  ", end = '')
+                else:
+                    print("HIGH: ", end = '')
+                band_split(int(sample[(count_bar-1)]), count_bar)
                 count_bar += 1
             pixels.show()
   
