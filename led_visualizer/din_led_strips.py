@@ -7,16 +7,20 @@ import tempfile
 import board
 import neopixel
 
-#import colorama
-#from colorama import Fore, Style
+import signal
+import time
+import readchar
+
 
 ### Configuration ###
 
-MAX_GREEN = 150
+MAX_GREEN = 140
 MAX_ORANGE = 210
 
-NUMBER_OF_PIXELS_PER_BAR = 61
-NUMBER_OF_BARS = 3
+NUMBER_OF_PIXELS_PER_BAR = 60
+NUMBER_OF_BARS = 4
+
+BRIGHTNESS = 0.1
 
 ### DO NOT EDIT ###
 
@@ -36,19 +40,28 @@ raw_target = %s
 bit_format = %s
 channels = mono
 [smoothing]
-noise_reduction = 40
+noise_reduction = 30
 [eq]
-1 = 1.1
-2 = 1
-3 = 1
+1 = 1
+2 = 0.9
+3 = 0.9
+4 = 0.9
 """
 
 MAX_PIXEL = (NUMBER_OF_PIXELS_PER_BAR*NUMBER_OF_BARS)
 
-pixels = neopixel.NeoPixel(board.D18, MAX_PIXEL, auto_write=False, pixel_order=neopixel.RGB, brightness=0.1)
+pixels = neopixel.NeoPixel(board.D18, MAX_PIXEL, auto_write=False, pixel_order=neopixel.RGB, brightness=BRIGHTNESS)
 
 config = conpat % (NUMBER_OF_BARS, RAW_TARGET, OUTPUT_BIT_FORMAT)
 bytetype, bytesize, bytenorm = ("H", 2, 65535) if OUTPUT_BIT_FORMAT == "16bit" else ("B", 1, 255)
+
+def exit(signum, frame):
+    pixels.fill((0,0,0))
+    pixels.show()
+    res = readchar.readchar()
+    exit(0)
+
+signal.signal(signal.SIGINT, exit)
 
 def calc(calc_in):
     calc_out = (((NUMBER_OF_PIXELS_PER_BAR-1)/255)*calc_in)
@@ -131,12 +144,7 @@ def run():
             count_bar = 1
             print("---------------")
             while count_bar <= NUMBER_OF_BARS:
-                if count_bar == 1:
-                    print("BASS: ", end = '')
-                elif count_bar == 2:
-                    print("MID:  ", end = '')
-                else:
-                    print("HIGH: ", end = '')
+                print("BAR[" + str(count_bar) + "]: " , end = '')
                 band_split(int(sample[(count_bar-1)]), count_bar)
                 count_bar += 1
             pixels.show()
