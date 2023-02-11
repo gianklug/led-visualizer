@@ -68,13 +68,59 @@ def calc(calc_in):
     calc_out = int(calc_out)
     return calc_out
 
+
+def pixel_r_define(pd_r_sample, pd_r_count_bar, pd_r_low, pd_r_max):
+    pd_r_set_pixel = calc(pd_r_low)
+    pd_r_set_pixel = (NUMBER_OF_PIXELS_PER_BAR*pd_r_count_bar)-(((NUMBER_OF_PIXELS_PER_BAR-1)/255)*pd_r_low)
+
+    pd_r_calc_sample = calc(pd_r_sample)
+    pd_r_calc_sample = (NUMBER_OF_PIXELS_PER_BAR*pd_r_count_bar)-(((NUMBER_OF_PIXELS_PER_BAR-1)/255)*pd_r_calc_sample)
+
+    pd_r_end_pixel = calc(pd_r_max-1)
+    pd_r_end_pixel = (NUMBER_OF_PIXELS_PER_BAR*pd_r_count_bar)-(((NUMBER_OF_PIXELS_PER_BAR-1)/255)*pd_r_end_pixel)-1
+    return pd_r_set_pixel, pd_r_calc_sample, pd_r_end_pixel
+
+
 def pixel_define(pd_sample, pd_count_bar, pd_low, pd_max):
-    pd_set_pixel = calc(pd_low) # 35
-    pd_set_pixel = pd_set_pixel+((pd_count_bar-1)*NUMBER_OF_PIXELS_PER_BAR) # 35 / 95 / 155
-    pd_calc_sample = calc(pd_sample) # 58
-    pd_calc_sample = (pd_calc_sample+((pd_count_bar-1)*NUMBER_OF_PIXELS_PER_BAR)) # 58 / 118 / 178
-    pd_end_pixel = calc(pd_max-1) # 49
-    pd_end_pixel = pd_end_pixel+((pd_count_bar-1)*NUMBER_OF_PIXELS_PER_BAR) # 49 / 109 / 169
+    # MAX_GREEN is set to 150
+    # MAX_ORANGE is set to 210
+    # 60 Pixels per bar
+
+    # calc the first pixel each color each bar
+    # green: 0
+    # orange: 35
+    # red: 48
+    pd_set_pixel = calc(pd_low)
+    # calc per bar
+    # bar 2 / green:  60  - 119
+    # bar 2 / orange: 95  - 85
+    # bar 2 / red:    108 - 72
+    # bar 3 / green:  120
+    # bar 3 / orange: 155
+    # bar 3 / red:    168
+    pd_set_pixel = pd_set_pixel+((pd_count_bar-1)*NUMBER_OF_PIXELS_PER_BAR)
+
+    # calc pixel from input: example 240
+    pd_calc_sample = calc(pd_sample)
+    # calc per bar
+    # bar 1: 56
+    # bar 2: 115
+    # bar 3: 174
+    pd_calc_sample = (pd_calc_sample+((pd_count_bar-1)*NUMBER_OF_PIXELS_PER_BAR))
+
+    # calc the last pixel per color per bar
+    # green:  34
+    # orange: 47
+    # red:    58
+    pd_end_pixel = calc(pd_max-1)
+    # calc per bar
+    # bar 2 / green:  94
+    # bar 2 / orange: 107
+    # bar 2 / red:    118
+    # bar 3 / green:  154
+    # bar 3 / orange: 167
+    # bar 3 / red:    178
+    pd_end_pixel = pd_end_pixel+((pd_count_bar-1)*NUMBER_OF_PIXELS_PER_BAR)
     return pd_set_pixel, pd_calc_sample, pd_end_pixel
 
 def set_dark(sd_sample, sd_count_bar, sd_pixels):
@@ -86,10 +132,19 @@ def set_dark(sd_sample, sd_count_bar, sd_pixels):
         sd_max_pixel -= 1
 
 def set_green(g_sample, g_pixels, g_count_bar):
-    g_set_pixel, g_calc_sample, g_end_pixel = pixel_define(g_sample, g_count_bar, 0, MAX_GREEN)
-    while g_set_pixel <= g_calc_sample and g_set_pixel <= g_end_pixel:
-        g_pixels[g_set_pixel] = (g_sample, 0, 0)
-        g_set_pixel += 1
+    if g_count_bar % 2: 
+        print ("ungerade")
+        g_set_pixel, g_calc_sample, g_end_pixel = pixel_define(g_sample, g_count_bar, 0, MAX_GREEN)
+        while g_set_pixel <= g_calc_sample and g_set_pixel <= g_end_pixel:
+            g_pixels[g_set_pixel] = (g_sample, 0, 0)
+            g_set_pixel += 1
+    else:
+        print ("gerade")
+        g_set_pixel, g_calc_sample, g_end_pixel = pixel_r_define(g_sample, g_count_bar, 0, MAX_GREEN)
+        while g_set_pixel >= g_calc_sample and g_set_pixel >= g_end_pixel:
+            g_pixels[g_set_pixel] = (g_sample, 0, 0)
+            g_set_pixel -= 1
+
 
 def set_orange(o_sample, o_pixels, o_count_bar):
     o_set_pixel, o_calc_sample, o_end_pixel = pixel_define(o_sample, o_count_bar, MAX_GREEN, MAX_ORANGE)
