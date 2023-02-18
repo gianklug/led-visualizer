@@ -5,10 +5,17 @@ import subprocess
 import tempfile
 
 import board
-import neopixel
+import platform
+
+# If no raspberry pi, use virtual
+if platform.machine() == "x86_64":
+    virtual = True
+else:
+    import neopixel
+    virtual = False
+
 
 import signal
-import time
 import readchar
 
 ### Configuration ###
@@ -48,7 +55,10 @@ noise_reduction = 30
 
 MAX_PIXEL = (NUMBER_OF_PIXELS_PER_BAR*NUMBER_OF_BARS)
 
-PIXEL_COM = neopixel.NeoPixel(board.D18, MAX_PIXEL, auto_write=False, pixel_order=neopixel.RGB, brightness=BRIGHTNESS)
+if virtual:
+    PIXEL_COM = [(0,0,0)]*MAX_PIXEL
+else:
+    PIXEL_COM = neopixel.NeoPixel(board.D18, MAX_PIXEL, auto_write=False, pixel_order=neopixel.RGB, brightness=BRIGHTNESS)
 
 OUTPUT = ""
 
@@ -56,13 +66,14 @@ config = conpat % (NUMBER_OF_BARS, RAW_TARGET, OUTPUT_BIT_FORMAT)
 bytetype, bytesize, bytenorm = ("H", 2, 65535) if OUTPUT_BIT_FORMAT == "16bit" else ("B", 1, 255)
 
 # print color
-#def color_encode(pixel):
-#    return f"\033[38;2;{pixel[0]};{pixel[1]};{pixel[2]}m*\033[0m"
+def color_encode(pixel):
+    return f"\033[38;2;{pixel[0]};{pixel[1]};{pixel[2]}m*\033[0m"
 
 
 def exit(signum, frame):
-    PIXEL_COM.fill((0,0,0))
-    PIXEL_COM.show()
+    if not virtual:
+        PIXEL_COM.fill((0,0,0))
+        PIXEL_COM.show()
     res = readchar.readchar()
     exit(0)
 
@@ -72,7 +83,7 @@ def cache_pixels():
     cache = {}
     for number in range(1+(NUMBER_OF_PIXELS_PER_BAR*NUMBER_OF_BARS)):
         current_bar = number // NUMBER_OF_PIXELS_PER_BAR 
-        if current_bar % 2 == 1 and current_bar != 0:
+        if (current_bar % 2 == 1 and current_bar != 0) and not virtual:
             real_number = abs(number - ((NUMBER_OF_PIXELS_PER_BAR-1) + current_bar*NUMBER_OF_PIXELS_PER_BAR))+current_bar*NUMBER_OF_PIXELS_PER_BAR
             cache[number] = real_number
         else:
@@ -134,6 +145,15 @@ def band_split(d_sample, d_count_bar):
         set_orange(d_sample, d_count_bar)
         set_red(d_sample, d_count_bar)
 
+def show_virtual():
+    for i in range(0, NUMBER_OF_BARS):
+        for j in range(0, NUMBER_OF_PIXELS_PER_BAR):
+            pixel = PIXEL_COM[(i*NUMBER_OF_PIXELS_PER_BAR)+j]
+            print(color_encode(pixel), end="")
+        print("\n", end="")
+    print()
+    
+
 def run():
     with tempfile.NamedTemporaryFile() as config_file:
         config_file.write(config.encode())
@@ -163,7 +183,10 @@ def run():
                 #print("BAR[" + str(count_bar) + "]: ", end = '')
                 band_split(int(sample[(count_bar-1)]), count_bar)
                 count_bar += 1
-            PIXEL_COM.show()
+            if virtual:
+                show_virtual()
+            else:
+                PIXEL_COM.show()
             #print("\033c", end="")
   
 if __name__ == "__main__":
