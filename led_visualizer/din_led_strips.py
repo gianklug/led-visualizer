@@ -24,7 +24,7 @@ MAX_GREEN = 140
 MAX_ORANGE = 210
 
 NUMBER_OF_PIXELS_PER_BAR = 60
-NUMBER_OF_BARS = 6
+NUMBER_OF_BARS = 10
 
 BRIGHTNESS = 0.1
 
@@ -40,17 +40,14 @@ RAW_TARGET = "/dev/stdout"
 conpat = """
 [general]
 bars = %d
-framerate = 30
+framerate = 20
 [output]
 method = raw
 raw_target = %s
 bit_format = %s
 channels = mono
 [smoothing]
-noise_reduction = 30
-[eq]
-1 = 1
-2 = 1
+noise_reduction = 20
 """
 
 MAX_PIXEL = (NUMBER_OF_PIXELS_PER_BAR*NUMBER_OF_BARS)
@@ -60,15 +57,13 @@ if virtual:
 else:
     PIXEL_COM = neopixel.NeoPixel(board.D18, MAX_PIXEL, auto_write=False, pixel_order=neopixel.RGB, brightness=BRIGHTNESS)
 
-OUTPUT = ""
-
 config = conpat % (NUMBER_OF_BARS, RAW_TARGET, OUTPUT_BIT_FORMAT)
 bytetype, bytesize, bytenorm = ("H", 2, 65535) if OUTPUT_BIT_FORMAT == "16bit" else ("B", 1, 255)
+
 
 # print color
 def color_encode(pixel):
     return f"\033[38;2;{pixel[0]};{pixel[1]};{pixel[2]}m*\033[0m"
-
 
 def exit(signum, frame):
     if not virtual:
@@ -119,6 +114,7 @@ def set_green(g_sample, g_count_bar):
         g_set_pixel += 1
 
 def set_orange(o_sample, o_count_bar):
+    global OUTPUT
     o_set_pixel, o_calc_sample, o_end_pixel = pixel_define(o_sample, o_count_bar, MAX_GREEN, MAX_ORANGE)
     while o_set_pixel <= o_calc_sample and o_set_pixel <= o_end_pixel:
         set_pixel(PIXEL_COM, o_set_pixel, (int(o_sample/2), o_sample, 0))
@@ -180,15 +176,14 @@ def run():
 
             count_bar = 1
             while count_bar <= NUMBER_OF_BARS:
-                #print('\033[?25l', end="")
-                #print("BAR[" + str(count_bar) + "]: ", end = '')
                 band_split(int(sample[(count_bar-1)]), count_bar)
                 count_bar += 1
+
             if virtual:
                 show_virtual()
             else:
                 PIXEL_COM.show()
-            #print("\033c", end="")
+
   
 if __name__ == "__main__":
     run()
