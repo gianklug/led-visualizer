@@ -146,6 +146,7 @@ def band_split(d_sample, d_count_bar):
         set_red(d_sample, d_count_bar)
 
 def show_virtual():
+    print("\033c", end="")
     for i in range(0, NUMBER_OF_BARS):
         for j in range(0, NUMBER_OF_PIXELS_PER_BAR):
             pixel = PIXEL_COM[(i*NUMBER_OF_PIXELS_PER_BAR)+j]
